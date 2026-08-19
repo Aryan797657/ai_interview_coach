@@ -13,34 +13,37 @@ export const generateInterviewQuestions = async (
     numberOfQuestions
 ) => {
     const prompt = `
-    You are an experienced technical interviewer conducting a professional
-    software engineering interview.
+    You are an experienced technical interviewer conducting a realistic interview.
 
-    Generate exactly ${numberOfQuestions} interview questions about "${topic}".
+    Generate ${numberOfQuestions} technical interview questions about ${topic}
+    at ${difficulty} difficulty level.
 
-    Difficulty level: ${difficulty}
+    The questions should:
+    - Test actual understanding, not just memorization.
+    - Be relevant to real technical interviews.
+    - Progress naturally in difficulty where appropriate.
+    - Include mostly practical and conceptual questions.
+    - Be clear and specific.
+    - Do not provide answers or explanations.
+    - Do not be overly generous with easy questions; only one or two questions
+    may be relatively straightforward.
 
-    Follow these requirements carefully:
+    The goal is to help the candidate genuinely prepare for an interview session.
 
-    1. Every question must be directly relevant to "${topic}".
-    2. Questions should test genuine understanding rather than simple memorization.
-    3. Match the requested difficulty level accurately.
-    4. Avoid repetitive questions that test the same concept.
-    5. Use a good mix of conceptual, practical, scenario-based, and problem-solving
-    questions when appropriate for the topic.
-    6. Questions should resemble questions asked in real technical interviews.
-    7. Questions must be clear, specific, and unambiguous.
-    8. Do not ask questions unrelated to "${topic}".
-    9. Do not provide answers, hints, explanations, or solutions.
-    10. Generate exactly ${numberOfQuestions} questions.
-    11. Do not make the interview overly easy. Include only one or two relatively
-    approachable questions; the remaining questions should appropriately
-    challenge the candidate at the requested difficulty level.
-    12. The question set should help the candidate meaningfully prepare for a
-    real interview by testing skills and concepts that are commonly relevant
-    to the selected topic. 
+    Return ONLY valid JSON in exactly this structure:
 
-    Return only the questions.
+    {
+        "questions": [
+            {
+                "question": "Question 1"
+            },
+            {
+                "question": "Question 2"
+            }
+        ]
+    }
+
+    Do not include markdown, code fences, explanations, or any text outside the JSON.
     `;
 
     const response = await ai.models.generateContent({

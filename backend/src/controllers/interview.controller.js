@@ -1,4 +1,5 @@
 import { generateInterviewQuestions } from "../services/interview.service.js";
+import Interview from "../models/interview.model.js";
 
 export const generateInterview = async (req, res) => {
     try {
@@ -10,9 +11,18 @@ export const generateInterview = async (req, res) => {
             numberOfQuestions
         );
 
-        return res.status(200).json({
-            success: true,
+        const interview = await Interview.create({
+            user: req.user._id,
+            topic,
+            difficulty,
+            numberOfQuestions,
             questions
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Interview generated successfully",
+            interview
         });
 
     } catch (error) {
