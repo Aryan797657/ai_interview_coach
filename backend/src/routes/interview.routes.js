@@ -1,8 +1,13 @@
 import { Router } from "express";
-import { testInterview } from "../controllers/interview.controller.js";
+import { generateInterview } from "../controllers/interview.controller.js";
+import { validateInterviewRequest } from "../middlewares/interview.middleware.js";
 
 const router = Router();
 
-router.get("/", testInterview);
+router.post(
+    "/generate",
+    validateInterviewRequest,
+    generateInterview
+);
 
-export default router; 
+export default router;
