@@ -32,6 +32,33 @@ const interviewSchema = new mongoose.Schema(
                 question: {
                     type: String,
                     required: true
+                },
+
+                answer: {
+                    type: String,
+                    default: null
+                },
+
+                feedback: {
+                    whatWasGood: {
+                        type: String,
+                        default: null
+                    },
+
+                    whatWasMissing: {
+                        type: String,
+                        default: null
+                    },
+
+                    howToImprove: {
+                        type: String,
+                        default: null
+                    },
+
+                    overallAssessment: {
+                        type: String,
+                        default: null
+                    }
                 }
             }
         ]

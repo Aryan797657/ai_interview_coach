@@ -74,3 +74,52 @@ export const generateInterviewQuestions = async (
 
     return JSON.parse(response.text); 
 };
+
+export const evaluateInterviewAnswer = async (
+    question,
+    answer
+) => {
+    const prompt = `
+You are an experienced technical interviewer evaluating a candidate's answer.
+
+Interview Question:
+${question}
+
+Candidate's Answer:
+${answer}
+
+Evaluate the answer based on:
+- Technical correctness
+- Understanding of the concept
+- Completeness
+- Clarity
+- Relevance to the question
+
+Be fair and realistic. Do not be unnecessarily harsh, but do not praise an answer
+that is technically incorrect or incomplete.
+
+Provide useful feedback that helps the candidate perform better in a real interview.
+
+Return ONLY valid JSON in exactly this structure:
+
+{
+    "feedback": {
+        "whatWasGood": "What the candidate explained correctly.",
+        "whatWasMissing": "Important concepts or details that were missing.",
+        "howToImprove": "Specific ways the candidate can improve the answer.",
+        "overallAssessment": "A concise overall assessment of the answer."
+    }
+}
+
+Do not include markdown, code fences, or any text outside the JSON.
+`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt
+    });
+
+    const parsedResponse = JSON.parse(response.text);
+
+    return parsedResponse;
+};
