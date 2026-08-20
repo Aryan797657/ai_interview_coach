@@ -7,111 +7,45 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 });
 
-export const generateInterviewQuestions = async (
+
+export const generateNextInterviewQuestion = async (
     topic,
     difficulty,
-    numberOfQuestions
+    messages
 ) => {
+    const conversation = messages
+        .map(
+            (message) =>
+                `${message.role}: ${message.content}`
+        )
+        .join("\n");
+
     const prompt = `
-    You are an experienced technical interviewer conducting a realistic interview.
+You are an experienced technical interviewer.
 
-    Generate ${numberOfQuestions} technical interview questions about ${topic}
-    at ${difficulty} difficulty level.
+Conduct a realistic technical interview.
 
-    The questions should:
-    - Test actual understanding, not just memorization.
-    - Be relevant to real technical interviews.
-    - Progress naturally in difficulty where appropriate.
-    - Include mostly practical and conceptual questions.
-    - Be clear and specific.
-    - Do not provide answers or explanations.
-    - Do not be overly generous with easy questions; only one or two questions
-    may be relatively straightforward.
+Topic: ${topic}
+Difficulty: ${difficulty}
 
-    The goal is to help the candidate genuinely prepare for an interview session.
+Conversation so far:
+${conversation || "No conversation yet."}
 
-    Return ONLY valid JSON in exactly this structure:
+Ask the next interview question.
 
-    {
-        "questions": [
-            {
-                "question": "Question 1"
-            },
-            {
-                "question": "Question 2"
-            }
-        ]
-    }
+Rules:
+- Ask only ONE question.
+- The question must be relevant to the topic.
+- Prefer questions that test understanding and practical knowledge.
+- Do not reveal the answer.
+- Do not give feedback yet.
+- If the candidate's previous answer needs clarification, ask a relevant follow-up.
+- Otherwise, move naturally to the next interview concept.
+- Do not be overly generous; only one or two questions in the entire interview
+  should be relatively straightforward.
+- Keep the interview useful for real interview preparation.
 
-    Do not include markdown, code fences, explanations, or any text outside the JSON.
-    `;
-
-    const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "object",
-                properties: {
-                    questions: {
-                        type: "array",
-                        items: {
-                            type: "object",
-                            properties: {
-                                question: {
-                                    type: "string"
-                                }
-                            },
-                            required: ["question"]
-                        }
-                    }
-                },
-                required: ["questions"]
-            }
-        }
-    });
-
-    return JSON.parse(response.text); 
-};
-
-export const evaluateInterviewAnswer = async (
-    question,
-    answer
-) => {
-    const prompt = `
-You are an experienced technical interviewer evaluating a candidate's answer.
-
-Interview Question:
-${question}
-
-Candidate's Answer:
-${answer}
-
-Evaluate the answer based on:
-- Technical correctness
-- Understanding of the concept
-- Completeness
-- Clarity
-- Relevance to the question
-
-Be fair and realistic. Do not be unnecessarily harsh, but do not praise an answer
-that is technically incorrect or incomplete.
-
-Provide useful feedback that helps the candidate perform better in a real interview.
-
-Return ONLY valid JSON in exactly this structure:
-
-{
-    "feedback": {
-        "whatWasGood": "What the candidate explained correctly.",
-        "whatWasMissing": "Important concepts or details that were missing.",
-        "howToImprove": "Specific ways the candidate can improve the answer.",
-        "overallAssessment": "A concise overall assessment of the answer."
-    }
-}
-
-Do not include markdown, code fences, or any text outside the JSON.
+Return ONLY the question as plain text.
 `;
 
     const response = await ai.models.generateContent({
@@ -119,7 +53,112 @@ Do not include markdown, code fences, or any text outside the JSON.
         contents: prompt
     });
 
-    const parsedResponse = JSON.parse(response.text);
+    return response.text.trim();
+};
 
-    return parsedResponse;
+export const generateInterviewerResponse = async (
+    topic,
+    difficulty,
+    messages
+) => {
+    const conversation = messages
+        .map(
+            (message) =>
+                `${message.role}: ${message.content}`
+        )
+        .join("\n");
+
+    const prompt = `
+You are conducting a realistic technical interview.
+
+Topic: ${topic}
+Difficulty: ${difficulty}
+
+Conversation:
+${conversation}
+
+Respond as the interviewer.
+
+Rules:
+- Ask only ONE question at a time.
+- If the candidate's answer is incomplete or unclear, ask a useful follow-up.
+- Otherwise move to the next relevant technical concept.
+- Do not give detailed feedback during the interview.
+- Do not reveal the answer to the question.
+- If the candidate asks for clarification, briefly clarify the concept without giving away the answer.
+- If the candidate asks you to directly provide the answer, encourage them to attempt it instead.
+- Keep the interview realistic and technically challenging.
+- Do not be overly generous. Only one or two questions should be relatively straightforward.
+- Help the candidate improve through meaningful questioning.
+
+Return ONLY the next interviewer message.
+`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt
+    });
+
+    return response.text.trim();
+};
+
+export const generateFinalFeedback = async (
+    topic,
+    difficulty,
+    messages
+) => {
+    const conversation = messages
+        .map(
+            (message) =>
+                `${message.role}: ${message.content}`
+        )
+        .join("\n");
+
+    const prompt = `
+You are an experienced technical interviewer reviewing a completed interview.
+
+Topic: ${topic}
+Difficulty: ${difficulty}
+
+Complete interview conversation:
+
+${conversation}
+
+Analyze the candidate's performance across the entire interview.
+
+Focus on:
+- Technical understanding
+- Accuracy
+- Completeness
+- Clarity
+- Ability to explain concepts
+- Areas where the candidate struggled
+- Areas where the candidate demonstrated strong understanding
+
+Be realistic and constructive.
+Do not be overly generous.
+Do not invent strengths that were not demonstrated.
+
+The purpose is to help the candidate perform better in future interviews.
+
+Return ONLY valid JSON in exactly this structure:
+
+{
+    "finalFeedback": {
+        "whatWasGood": "...",
+        "whatWasMissing": "...",
+        "howToImprove": "...",
+        "overallAssessment": "..."
+    }
+}
+
+Do not include markdown, code fences, or text outside the JSON.
+`;
+
+    const response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt
+    });
+
+    return JSON.parse(response.text);
 };

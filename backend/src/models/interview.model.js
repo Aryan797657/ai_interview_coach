@@ -27,41 +27,41 @@ const interviewSchema = new mongoose.Schema(
             max: 15
         },
 
-        questions: [
+        messages: [
             {
-                question: {
+                role: {
                     type: String,
+                    enum: ["interviewer", "candidate"],
                     required: true
                 },
 
-                answer: {
+                content: {
                     type: String,
-                    default: null
-                },
-
-                feedback: {
-                    whatWasGood: {
-                        type: String,
-                        default: null
-                    },
-
-                    whatWasMissing: {
-                        type: String,
-                        default: null
-                    },
-
-                    howToImprove: {
-                        type: String,
-                        default: null
-                    },
-
-                    overallAssessment: {
-                        type: String,
-                        default: null
-                    }
+                    required: true
                 }
             }
-        ]
+        ],
+        finalFeedback: {
+            whatWasGood: {
+                type: String,
+                default: null
+            },
+
+            whatWasMissing: {
+                type: String,
+                default: null
+            },
+
+            howToImprove: {
+                type: String,
+                default: null
+            },
+
+            overallAssessment: {
+                type: String,
+                default: null
+            }
+        }
     },
     {
         timestamps: true

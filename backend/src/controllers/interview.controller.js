@@ -1,17 +1,18 @@
 import {
     generateInterviewQuestions,
-    evaluateInterviewAnswer
+    evaluateInterviewAnswer,
+    generateNextInterviewQuestion
 } from "../services/interview.service.js";
 import Interview from "../models/interview.model.js";
 
-export const generateInterview = async (req, res) => {
+export const startInterview = async (req, res) => {
     try {
         const { topic, difficulty, numberOfQuestions } = req.body;
 
-        const questions = await generateInterviewQuestions(
+        const firstQuestion = await generateNextInterviewQuestion(
             topic,
             difficulty,
-            numberOfQuestions
+            []
         );
 
         const interview = await Interview.create({
@@ -19,28 +20,33 @@ export const generateInterview = async (req, res) => {
             topic,
             difficulty,
             numberOfQuestions,
-            questions
+            messages: [
+                {
+                    role: "interviewer",
+                    content: firstQuestion
+                }
+            ]
         });
 
         return res.status(201).json({
             success: true,
-            message: "Interview generated successfully",
+            message: "Interview started successfully",
             interview
         });
 
     } catch (error) {
-        console.error("Interview generation error:", error);
+        console.error("Start interview error:", error);
 
         return res.status(500).json({
             success: false,
-            message: "Failed to generate interview questions"
+            message: "Failed to start interview"
         });
     }
 };
 
-export const submitAnswer = async (req, res) => {
+export const sendMessage = async (req, res) => {
     try {
-        const { questionId, answer } = req.body;
+        const { message } = req.body;
         const { interviewId } = req.params;
 
         const interview = await Interview.findById(interviewId);
@@ -59,38 +65,84 @@ export const submitAnswer = async (req, res) => {
             });
         }
 
-        const question = interview.questions.id(questionId);
+        interview.messages.push({
+            role: "candidate",
+            content: message
+        });
 
-        if (!question) {
-            return res.status(404).json({
-                success: false,
-                message: "Question not found"
-            });
-        }
+        const interviewerResponse =
+            await generateInterviewerResponse(
+                interview.topic,
+                interview.difficulty,
+                interview.messages
+            );
 
-        question.answer = answer;
-
-        const evaluation = await evaluateInterviewAnswer(
-            question.question,
-            answer
-        );
-
-        question.feedback = evaluation.feedback;
+        interview.messages.push({
+            role: "interviewer",
+            content: interviewerResponse
+        });
 
         await interview.save();
 
         return res.status(200).json({
             success: true,
-            message: "Answer submitted successfully",
-            question
+            message: "Message processed successfully",
+            interviewerResponse,
+            interview
         });
 
     } catch (error) {
-        console.error("Submit answer error:", error);
+        console.error("Send message error:", error);
 
         return res.status(500).json({
             success: false,
-            message: "Failed to submit answer"
+            message: "Failed to process message"
+        });
+    }
+};
+
+export const finishInterview = async (req, res) => {
+    try {
+        const { interviewId } = req.params;
+
+        const interview = await Interview.findById(interviewId);
+
+        if (!interview) {
+            return res.status(404).json({
+                success: false,
+                message: "Interview not found"
+            });
+        }
+
+        if (interview.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to access this interview"
+            });
+        }
+
+        const feedback = await generateFinalFeedback(
+            interview.topic,
+            interview.difficulty,
+            interview.messages
+        );
+
+        interview.finalFeedback = feedback.finalFeedback;
+
+        await interview.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Interview completed successfully",
+            finalFeedback: interview.finalFeedback
+        });
+
+    } catch (error) {
+        console.error("Finish interview error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to finish interview"
         });
     }
 };
